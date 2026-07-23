@@ -3,7 +3,7 @@
 # -----------------------------------------------------------------------------
 
 # Stage 1: Build & Prune Monorepo
-FROM node:20-alpine AS builder
+FROM node:26-alpine AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 RUN npm install -g pnpm turbo
@@ -12,7 +12,7 @@ COPY . .
 RUN turbo prune @patterns/api --docker
 
 # Stage 2: Install Dependencies & Build Application
-FROM node:20-alpine AS installer
+FROM node:26-alpine AS installer
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 RUN npm install -g pnpm
@@ -25,7 +25,7 @@ COPY --from=builder /app/out/full/ .
 RUN pnpm run build --filter @patterns/api
 
 # Stage 3: Production Runner
-FROM node:20-alpine AS runner
+FROM node:26-alpine AS runner
 LABEL org.opencontainers.image.title="Patterns API" \
       org.opencontainers.image.description="Patterns Headless Web-to-Print API Server" \
       org.opencontainers.image.source="https://github.com/patterns/patterns"

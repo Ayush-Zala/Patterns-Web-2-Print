@@ -1,0 +1,13 @@
+{
+  "extends": "@patterns/typescript-config/base.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "outDir": "./dist",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "baseUrl": "./",
+    "target": "es2021"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

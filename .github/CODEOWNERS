@@ -1,0 +1,19 @@
+# Monorepo Code Ownership Boundaries
+
+# Backend Applications
+/apps/api/            @patterns-team/backend
+/apps/worker/         @patterns-team/backend
+
+# Frontend Applications
+/apps/cms/            @patterns-team/frontend
+/apps/website/        @patterns-team/frontend
+/apps/editor/         @patterns-team/editor
+
+# Shared Packages
+/packages/ui/         @patterns-team/frontend
+/packages/prisma/     @patterns-team/backend
+/packages/            @patterns-team/core
+
+# DevOps & Infrastructure
+/.github/             @patterns-team/devops
+/infrastructure/      @patterns-team/devops

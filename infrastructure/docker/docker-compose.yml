@@ -1,0 +1,164 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: patterns-postgres
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - patterns-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    image: redis:7
+    container_name: patterns-redis
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - patterns-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  minio:
+    image: minio/minio:latest
+    container_name: patterns-minio
+    restart: unless-stopped
+    entrypoint: ["minio", "server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "${MINIO_API_PORT}:9000"
+      - "${MINIO_CONSOLE_PORT}:9001"
+    volumes:
+      - minio-data:/data
+    networks:
+      - patterns-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  adminer:
+    image: adminer:latest
+    container_name: patterns-adminer
+    restart: unless-stopped
+    ports:
+      - "${PGADMIN_PORT}:8080"
+    networks:
+      - patterns-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: patterns-redisinsight
+    restart: unless-stopped
+    ports:
+      - "${REDISINSIGHT_PORT}:5540"
+    volumes:
+      - redisinsight-data:/data
+    networks:
+      - patterns-network
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5540/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # FUTURE APPLICATION CONTAINERS
+  # ---------------------------------------------------------------------------
+  # Uncomment and configure these when adding applications to Docker.
+  #
+  # api:
+  #   image: patterns-api:latest
+  #   container_name: patterns-api
+  #   ...
+  # worker:
+  #   image: patterns-worker:latest
+  #   container_name: patterns-worker
+  #   ...
+  # cms:
+  #   image: patterns-cms:latest
+  #   container_name: patterns-cms
+  #   ...
+  # website:
+  #   image: patterns-website:latest
+  #   container_name: patterns-website
+  #   ...
+  # editor:
+  #   image: patterns-editor:latest
+  #   container_name: patterns-editor
+  #   ...
+
+networks:
+  patterns-network:
+    name: patterns-network
+    driver: bridge
+
+volumes:
+  postgres-data:
+    name: postgres-data
+  redis-data:
+    name: redis-data
+  minio-data:
+    name: minio-data
+  pgadmin-data:
+    name: pgadmin-data
+  redisinsight-data:
+    name: redisinsight-data

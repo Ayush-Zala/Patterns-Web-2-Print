@@ -1,0 +1,55 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgcrypto]
+}
+
+// -----------------------------------------------------------------------------
+// SYSTEM MODULE
+// -----------------------------------------------------------------------------
+model SystemSetting {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key       String    @unique
+  value     String
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(1)
+
+  @@map("system_settings")
+}
+
+// -----------------------------------------------------------------------------
+// WORKSPACE MODULE
+// Future entities: Workspace, Member, Role
+// -----------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------
+// AUTHENTICATION MODULE
+// Future entities: User, Session, PasswordReset
+// -----------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------
+// PRODUCT MODULE
+// Future entities: Product, Variant, Category
+// -----------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------
+// ORDER MODULE
+// Future entities: Order, OrderItem, Fulfillment
+// -----------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------
+// TEMPLATE & ASSET MODULE
+// Future entities: Template, Asset, Folder
+// -----------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------
+// EDITOR MODULE
+// Future entities: SavedDesign, DesignElement
+// -----------------------------------------------------------------------------

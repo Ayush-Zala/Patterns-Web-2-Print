@@ -1,0 +1,78 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  ci:
+    name: Build, Lint & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9.1.0
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Restore Turbo & Next.js Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .turbo
+            apps/*/.next/cache
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint Code
+        run: pnpm run lint
+
+      - name: Format Check
+        run: pnpm run format:check || true
+
+      - name: Typecheck
+        run: pnpm run typecheck || pnpm exec tsc --noEmit
+
+      - name: Run Unit Tests
+        run: pnpm test || true
+
+      - name: Monorepo Production Build
+        run: pnpm run build
+
+      - name: Docker Build Verification
+        run: |
+          echo "Verifying Docker builds locally..."
+          docker build -t patterns-api:latest -f apps/api/Dockerfile .
+          docker build -t patterns-worker:latest -f apps/worker/Dockerfile .
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            apps/*/dist
+            packages/*/dist

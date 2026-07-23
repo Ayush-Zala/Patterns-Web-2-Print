@@ -1,0 +1,10 @@
+{
+  "extends": "@patterns/typescript-config/base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "module": "esnext",
+    "jsx": "react-jsx"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

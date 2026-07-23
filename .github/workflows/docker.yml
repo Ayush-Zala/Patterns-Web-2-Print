@@ -1,0 +1,32 @@
+name: Docker Image Build Verification
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  docker-verify:
+    name: Verify Docker Applications
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [api, worker, cms, website, editor]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Application Image (${{ matrix.app }})
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/${{ matrix.app }}/Dockerfile
+          push: false
+          tags: patterns-${{ matrix.app }}:verify
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

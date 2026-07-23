@@ -1,0 +1,33 @@
+import { z } from 'zod';
+import { Environment } from '@common/enums/environment.enum';
+
+export const envSchema = z.object({
+  NODE_ENV: z.nativeEnum(Environment).default(Environment.Development),
+  PORT: z.coerce.number().default(4000),
+  CORS_ORIGINS: z.string().default('http://localhost:3000'),
+  DATABASE_URL: z.string().url().default('postgresql://postgres:postgres@localhost:5432/patterns?schema=public'),
+  DATABASE_POOL_SIZE: z.coerce.number().default(10),
+  DATABASE_LOG_LEVEL: z.string().default('error,warn'),
+  REDIS_HOST: z.string().default('localhost'),
+  REDIS_PORT: z.coerce.number().default(6379),
+  REDIS_PASSWORD: z.string().optional(),
+  REDIS_DB: z.coerce.number().default(0),
+  STORAGE_ENDPOINT: z.string().default('localhost'),
+  STORAGE_PORT: z.coerce.number().default(9000),
+  STORAGE_ACCESS_KEY: z.string().default('minioadmin'),
+  STORAGE_SECRET_KEY: z.string().default('minioadmin'),
+  STORAGE_USE_SSL: z.coerce.boolean().default(false),
+  STORAGE_REGION: z.string().default('us-east-1'),
+});
+
+export type EnvConfig = z.infer<typeof envSchema>;
+
+export function validate(config: Record<string, unknown>) {
+  const result = envSchema.safeParse(config);
+  
+  if (!result.success) {
+    throw new Error(`Environment variables validation error: ${result.error.message}`);
+  }
+  
+  return result.data;
+}

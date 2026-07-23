@@ -2,14 +2,14 @@
 # Patterns Worker - Production Dockerfile
 # -----------------------------------------------------------------------------
 
-FROM node:20-alpine AS builder
+FROM node:26-alpine AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 RUN npm install -g pnpm turbo
 COPY . .
 RUN turbo prune @patterns/worker --docker
 
-FROM node:20-alpine AS installer
+FROM node:26-alpine AS installer
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 RUN npm install -g pnpm
@@ -21,7 +21,7 @@ RUN pnpm install --frozen-lockfile
 COPY --from=builder /app/out/full/ .
 RUN pnpm run build --filter @patterns/worker
 
-FROM node:20-alpine AS runner
+FROM node:26-alpine AS runner
 LABEL org.opencontainers.image.title="Patterns Worker" \
       org.opencontainers.image.description="Patterns Background Queue Worker Application"
 

@@ -3,6 +3,7 @@ import { ProductsApi } from './modules/products';
 import { WorkspaceApi } from './modules/workspace';
 import { AuthApi } from './modules/auth';
 import { TemplateApi } from './modules/templates';
+import { IntegrationApi } from './modules/integration';
 
 export interface ApiClientOptions {
   baseUrl: string;
@@ -15,6 +16,7 @@ export class ApiClient {
   public workspace: WorkspaceApi;
   public auth: AuthApi;
   public templates: TemplateApi;
+  public integration: IntegrationApi;
 
   constructor(private readonly options: ApiClientOptions) {
     this.system = new SystemApi(this);
@@ -22,6 +24,7 @@ export class ApiClient {
     this.workspace = new WorkspaceApi(this);
     this.auth = new AuthApi(this);
     this.templates = new TemplateApi(this);
+    this.integration = new IntegrationApi(this);
   }
 
   public async fetch<T>(path: string, init?: RequestInit): Promise<T> {

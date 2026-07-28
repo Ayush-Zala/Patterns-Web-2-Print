@@ -4,4 +4,5 @@ export * from './input';
 export * from './badge';
 export * from './skeleton';
 export * from './empty-state';
-// Exporting all from a barrel file
+export * from './theme-provider';
+export * from './theme-toggle';

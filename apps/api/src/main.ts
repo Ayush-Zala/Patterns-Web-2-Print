@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 
@@ -25,6 +26,7 @@ async function bootstrap() {
 
   // Security
   app.use(helmet());
+  app.use(cookieParser());
   app.enableCors({
     origin: configService.get<string[]>('cors.origins') ?? [],
     credentials: true,
@@ -42,10 +44,7 @@ async function bootstrap() {
 
   // Global Pipes, Filters, and Interceptors
   app.useGlobalPipes(new ValidationPipe(VALIDATION_OPTIONS));
-  app.useGlobalFilters(
-    new GlobalExceptionFilter(),
-    new PrismaExceptionFilter(),
-  );
+  app.useGlobalFilters(new GlobalExceptionFilter(), new PrismaExceptionFilter());
   app.useGlobalInterceptors(new ResponseInterceptor());
 
   // Graceful Shutdown
@@ -73,7 +72,7 @@ async function bootstrap() {
   // Start Application
   const port = configService.get<number>('port') || 4000;
   await app.listen(port);
-  
+
   logger.log(`Application successfully started on port ${port}`, 'Bootstrap');
 }
 bootstrap();

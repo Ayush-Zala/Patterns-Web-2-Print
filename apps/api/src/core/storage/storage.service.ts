@@ -10,7 +10,7 @@ export class StorageService implements OnModuleInit {
 
   constructor(private readonly configService: ConfigService) {}
 
-  onModuleInit() {
+  async onModuleInit() {
     this.provider = new MinioStorageProvider({
       endPoint: this.configService.get<string>('STORAGE_ENDPOINT', 'localhost'),
       port: this.configService.get<number>('STORAGE_PORT', 9000),
@@ -20,7 +20,13 @@ export class StorageService implements OnModuleInit {
       region: this.configService.get<string>('STORAGE_REGION', 'us-east-1'),
     });
 
-    this.logger.log('StorageService initialized with MinIO provider');
+    try {
+      // Hot reload trigger 2
+      await this.provider.initializeBuckets();
+      this.logger.log('StorageService initialized with MinIO provider and buckets created');
+    } catch (e: any) {
+      this.logger.error('Failed to initialize MinIO buckets: ' + e?.message);
+    }
   }
 
   getProvider(): StorageProvider {

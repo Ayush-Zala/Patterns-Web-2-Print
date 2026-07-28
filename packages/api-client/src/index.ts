@@ -4,3 +4,4 @@ export * from './modules/products';
 export * from './modules/workspace';
 export * from './modules/auth';
 export * from './modules/templates';
+export * from './modules/integration';

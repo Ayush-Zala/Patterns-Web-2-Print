@@ -50,7 +50,7 @@ export abstract class BaseRepository {
   /**
    * Returns an update payload for soft deleting a record.
    */
-  protected softDelete() {
+  protected getSoftDeletePayload() {
     return {
       deletedAt: new Date(),
     };
@@ -59,7 +59,7 @@ export abstract class BaseRepository {
   /**
    * Returns an update payload for restoring a soft-deleted record.
    */
-  protected restore() {
+  protected getRestorePayload() {
     return {
       deletedAt: null,
     };

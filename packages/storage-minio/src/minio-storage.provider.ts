@@ -35,10 +35,30 @@ export class MinioStorageProvider implements StorageProvider {
       if (!exists) {
         await this.client.makeBucket(bucket, 'us-east-1');
       }
+
+      if (bucket === BUCKET_NAMES.PUBLIC) {
+        const policy = {
+          Version: '2012-10-17',
+          Statement: [
+            {
+              Effect: 'Allow',
+              Principal: { AWS: ['*'] },
+              Action: ['s3:GetObject'],
+              Resource: [`arn:aws:s3:::${bucket}/*`],
+            },
+          ],
+        };
+        await this.client.setBucketPolicy(bucket, JSON.stringify(policy)).catch(console.error);
+      }
     }
   }
 
-  async upload(bucket: string, path: string, data: Buffer | Uint8Array, mimeType?: string): Promise<string> {
+  async upload(
+    bucket: string,
+    path: string,
+    data: Buffer | Uint8Array,
+    mimeType?: string,
+  ): Promise<string> {
     const meta: ItemBucketMetadata = mimeType ? { 'Content-Type': mimeType } : {};
     const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data);
     await this.client.putObject(bucket, path, buffer, buffer.length, meta);
@@ -74,7 +94,7 @@ export class MinioStorageProvider implements StorageProvider {
   }
 
   async copy(bucket: string, sourcePath: string, destinationPath: string): Promise<void> {
-    const cond = new (require('minio')).CopyConditions();
+    const cond = new (require('minio').CopyConditions)();
     await this.client.copyObject(bucket, destinationPath, `/${bucket}/${sourcePath}`, cond);
   }
 

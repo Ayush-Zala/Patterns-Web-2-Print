@@ -26,14 +26,301 @@ model SystemSetting {
 
 // -----------------------------------------------------------------------------
 // WORKSPACE MODULE
-// Future entities: Workspace, Member, Role
 // -----------------------------------------------------------------------------
 
+enum WorkspaceStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum ChannelType {
+  CUSTOM
+  WORDPRESS
+  SHOPIFY
+  // Future: WOOCOMMERCE, BIGCOMMERCE, MAGENTO, ETSY
+}
+
+model Workspace {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  publicId          String          @unique @map("public_id") // ULID or UUIDv7 mapped to wrk_...
+  code              String          @unique // e.g. WS000001
+  name              String
+  slug              String          @unique
+  description       String?
+  status            WorkspaceStatus @default(ACTIVE)
+  ownerId           String          @map("owner_id") @db.Uuid
+  defaultChannel    ChannelType     @default(CUSTOM) @map("default_channel")
+
+  // JSON Configurations
+  settings          Json
+  preferences       Json
+
+  // Logo fields (TODO: Replace with Asset relation after Asset module is built)
+  logoUrl           String?         @map("logo_url")
+  logoFilename      String?         @map("logo_filename")
+  logoMimeType      String?         @map("logo_mime_type")
+  logoSize          Int?            @map("logo_size")
+
+  // Metadata
+  lastActivityAt    DateTime?       @map("last_activity_at")
+
+  // Audit
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+  deletedAt         DateTime?       @map("deleted_at")
+  version           Int             @default(1)
+
+  // Relations
+  owner             User            @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+  activeSessions    Session[]       @relation("ActiveWorkspace")
+  userPreferences   UserPreference[]
+  auditLogs         AuditLog[]
+  integrations      Integration[]
+
+  @@index([slug])
+  @@index([status])
+  @@index([ownerId])
+  @@index([deletedAt])
+  @@index([createdAt])
+  @@index([publicId])
+  @@index([code])
+  @@map("workspaces")
+}
+
 // -----------------------------------------------------------------------------
-// AUTHENTICATION MODULE
-// Future entities: User, Session, PasswordReset
+// INTEGRATION MODULE
 // -----------------------------------------------------------------------------
 
+enum IntegrationType {
+  NATIVE_WEBSITE
+  WORDPRESS
+  SHOPIFY
+}
+
+enum IntegrationStatus {
+  ACTIVE
+  DISCONNECTED
+  SUSPENDED
+}
+
+enum ConnectionStatus {
+  DISCONNECTED
+  PENDING
+  CONNECTED
+}
+
+model Integration {
+  id                     String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId            String            @map("workspace_id") @db.Uuid
+  type                   IntegrationType
+  displayName            String            @map("display_name")
+  status                 IntegrationStatus @default(ACTIVE)
+  configuration          Json              @default("{}")
+
+  // Native Website Fields
+  apiKey                 String?           @unique @map("api_key")
+  apiSecretHash          String?           @map("api_secret_hash")
+  credentialsGeneratedAt DateTime?         @map("credentials_generated_at")
+  lastVerifiedAt         DateTime?         @map("last_verified_at")
+  connectionStatus       ConnectionStatus  @default(DISCONNECTED) @map("connection_status")
+
+  // Audit
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+  deletedAt     DateTime?         @map("deleted_at")
+  version       Int               @default(1)
+
+  workspace     Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, type])
+  @@index([workspaceId])
+  @@index([type])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("integrations")
+}
+
+// -----------------------------------------------------------------------------
+// AUTHENTICATION & IDENTITY MODULES
+// Future entities: PasswordReset
+// -----------------------------------------------------------------------------
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING
+}
+
+enum SessionStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+enum LoginAttemptReason {
+  INVALID_PASSWORD
+  USER_NOT_FOUND
+  USER_SUSPENDED
+  RATE_LIMITED
+  SUCCESS
+}
+
+model User {
+  id                String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email             String     @unique
+  passwordHash      String     @map("password_hash")
+  firstName         String     @map("first_name")
+  lastName          String     @map("last_name")
+  displayName       String?    @map("display_name")
+  avatarUrl         String?    @map("avatar_url")
+  avatarFilename    String?    @map("avatar_filename")
+  avatarMimeType    String?    @map("avatar_mime_type")
+  avatarSize        Int?       @map("avatar_size")
+  phone             String?
+  status            UserStatus @default(PENDING)
+  emailVerified     Boolean    @default(false) @map("email_verified")
+  emailVerifiedAt   DateTime?  @map("email_verified_at")
+  lastLoginAt       DateTime?  @map("last_login_at")
+  lastActivityAt    DateTime?  @map("last_activity_at")
+  tokenVersion      Int        @default(1) @map("token_version")
+  passwordChangedAt DateTime?  @map("password_changed_at")
+  
+  // Audit
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+  deletedAt         DateTime?  @map("deleted_at")
+  version           Int        @default(1)
+  // createdById    String?    @db.Uuid
+  // updatedById    String?    @db.Uuid
+
+  sessions          Session[]
+  refreshTokens     RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  workspacesOwned   Workspace[]    @relation("WorkspaceOwner")
+  preferences       UserPreference[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+
+  @@index([email])
+  @@index([status])
+  @@index([deletedAt])
+  @@index([createdAt])
+  @@map("users")
+}
+
+model RefreshToken {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  tokenHash   String    @unique @map("token_hash")
+  familyId    String    @map("family_id") @db.Uuid
+  expiresAt   DateTime  @map("expires_at")
+  revokedAt   DateTime? @map("revoked_at")
+  deviceId    String?   @map("device_id") @db.Uuid
+  ipAddress   String?   @map("ip_address")
+  userAgent   String?   @map("user_agent")
+  
+  // Audit
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device      Device?   @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([familyId])
+  @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  
+  // Audit
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("password_reset_tokens")
+}
+
+model Session {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String        @map("user_id") @db.Uuid
+  status         SessionStatus @default(ACTIVE)
+  deviceName     String?       @map("device_name")
+  browser        String?
+  os             String?
+  ipAddress      String?       @map("ip_address")
+  country        String?
+  city           String?
+  userAgent      String?       @map("user_agent")
+  lastActivityAt DateTime?     @map("last_activity_at")
+  expiresAt      DateTime      @map("expires_at")
+  revokedAt      DateTime?     @map("revoked_at")
+  
+  // Audit
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  activeWorkspaceId String?    @map("active_workspace_id") @db.Uuid
+  activeWorkspace   Workspace? @relation("ActiveWorkspace", fields: [activeWorkspaceId], references: [id], onDelete: SetNull)
+
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([activeWorkspaceId])
+  @@map("sessions")
+}
+
+model Device {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fingerprint    String    @unique
+  name           String?
+  browser        String?
+  os             String?
+  platform       String?
+  trusted        Boolean   @default(false)
+  verifiedAt     DateTime? @map("verified_at")
+  trustedUntil   DateTime? @map("trusted_until")
+  lastSeenAt     DateTime? @map("last_seen_at")
+
+  // Audit
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  refreshTokens  RefreshToken[]
+
+  @@index([fingerprint])
+  @@map("devices")
+}
+
+model LoginAttempt {
+  id             String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email          String
+  success        Boolean
+  reason         LoginAttemptReason
+  ipAddress      String?            @map("ip_address")
+  userAgent      String?            @map("user_agent")
+
+  // Audit
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  @@index([email])
+  @@index([ipAddress])
+  @@map("login_attempts")
+}
 // -----------------------------------------------------------------------------
 // PRODUCT MODULE
 // Future entities: Product, Variant, Category
@@ -53,3 +340,125 @@ model SystemSetting {
 // EDITOR MODULE
 // Future entities: SavedDesign, DesignElement
 // -----------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------
+// USER PREFERENCES MODULE
+// -----------------------------------------------------------------------------
+
+model UserPreference {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId               String    @map("user_id") @db.Uuid
+  workspaceId          String    @map("workspace_id") @db.Uuid
+  theme                String    @default("system")
+  language             String    @default("en-US")
+  timezone             String    @default("UTC")
+  sidebarCollapsed     Boolean   @default(false) @map("sidebar_collapsed")
+  dashboardLayout      Json      @default("{}") @map("dashboard_layout")
+  notificationSettings Json      @default("{}") @map("notification_settings")
+
+  // Audit
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace            Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@index([userId])
+  @@index([workspaceId])
+  @@map("user_preferences")
+}
+
+// -----------------------------------------------------------------------------
+// NOTIFICATION MODULE
+// -----------------------------------------------------------------------------
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  SYSTEM
+  // Future: PRODUCT, ORDER, PAYMENT, WEBHOOK
+}
+
+model Notification {
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  publicId    String           @unique @map("public_id") // ULID mapped to not_...
+  userId      String           @map("user_id") @db.Uuid
+  title       String
+  message     String
+  type        NotificationType @default(INFO)
+  readAt      DateTime?        @map("read_at")
+
+  // Audit
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([publicId])
+  @@index([readAt])
+  @@map("notifications")
+}
+
+// -----------------------------------------------------------------------------
+// AUDIT LOG MODULE
+// -----------------------------------------------------------------------------
+
+model AuditLog {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  publicId    String   @unique @map("public_id") // ULID mapped to aud_...
+  userId      String?  @map("user_id") @db.Uuid
+  workspaceId String?  @map("workspace_id") @db.Uuid
+  action      String
+  resource    String
+  resourceId  String?  @map("resource_id")
+  metadata    Json?    @default("{}")
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  requestId   String?  @map("request_id")
+
+  // Audit
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([resource, resourceId])
+  @@index([publicId])
+  @@index([action])
+  @@map("audit_logs")
+}
+
+
+// -----------------------------------------------------------------------------
+// PRODUCT MODULE
+// -----------------------------------------------------------------------------
+
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Product {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId String        @map("workspace_id") @db.Uuid
+  title       String
+  description String?
+  price       Int           // Price in cents
+  imageUrl    String?       @map("image_url")
+  status      ProductStatus @default(DRAFT)
+  
+  // Audit
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  deletedAt   DateTime?     @map("deleted_at")
+  version     Int           @default(1)
+
+  @@map("products")
+}

@@ -1,27 +1,30 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "@patterns/ui/src/globals.css";
-import { AppProvider } from "./providers";
+import type { Metadata, Viewport } from 'next';
+import { Geist, Geist_Mono } from 'next/font/google';
+import '@patterns/ui/src/globals.css';
+import { AppProvider } from './providers';
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
-  title: "Patterns",
-  description: "Enterprise Web-to-Print Storefront",
+  title: 'Patterns',
+  description: 'Enterprise Web-to-Print Storefront',
   icons: {
-    icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
   },
-  manifest: "/site.webmanifest",
-  themeColor: "#000000",
+  manifest: '/site.webmanifest',
+};
+
+export const viewport: Viewport = {
+  themeColor: '#000000',
 };
 
 export default function RootLayout({
@@ -31,12 +34,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className="antialiased">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans`}
-      >
-        <AppProvider>
-          {children}
-        </AppProvider>
+      <body className={`${geistSans.variable} ${geistMono.variable} font-sans`}>
+        <AppProvider>{children}</AppProvider>
       </body>
     </html>
   );

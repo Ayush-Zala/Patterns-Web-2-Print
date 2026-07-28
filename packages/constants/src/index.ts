@@ -25,8 +25,9 @@ export const WORKSPACE_DEFAULT_NAME = 'My Workspace';
 export const MIN_PASSWORD_LENGTH = 8;
 
 // HTTP
-export const HEADER_NAMES = {
+export const HEADERS = {
   REQUEST_ID: 'x-request-id',
+  SESSION_ID: 'x-session-id',
   AUTHORIZATION: 'authorization',
   WORKSPACE_ID: 'x-workspace-id',
 };

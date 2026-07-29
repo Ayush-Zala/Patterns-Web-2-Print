@@ -29,7 +29,10 @@ export abstract class BaseJobProcessor<TData = any, TResult = any> {
           this.logger.log(`Completed job ${job.id} (${job.name})`);
           return result;
         } catch (error) {
-          this.logger.error(`Failed job ${job.id} (${job.name}): ${(error as Error).message}`, (error as Error).stack);
+          this.logger.error(
+            `Failed job ${job.id} (${job.name}): ${(error as Error).message}`,
+            (error as Error).stack,
+          );
           throw error;
         }
       },

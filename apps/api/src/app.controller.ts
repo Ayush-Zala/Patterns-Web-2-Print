@@ -7,7 +7,7 @@ export class AppController {
     return {
       status: 'ok',
       service: 'patterns-api',
-      version: '0.1.0'
+      version: '0.1.0',
     };
   }
 }

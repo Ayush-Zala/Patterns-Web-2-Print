@@ -1,12 +1,16 @@
 /**
  * Halts execution for a specified number of milliseconds.
  */
-export const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+export const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
  * Creates a debounced function that delays invoking the provided function.
  */
-export function debounce<T extends (...args: any[]) => void>(func: T, wait: number): (...args: Parameters<T>) => void {
+export function debounce<T extends (...args: any[]) => void>(
+  func: T,
+  wait: number,
+): (...args: Parameters<T>) => void {
   let timeout: ReturnType<typeof setTimeout> | null = null;
   return (...args: Parameters<T>) => {
     if (timeout) clearTimeout(timeout);
@@ -17,7 +21,10 @@ export function debounce<T extends (...args: any[]) => void>(func: T, wait: numb
 /**
  * Creates a throttled function that only invokes the provided function at most once per every wait milliseconds.
  */
-export function throttle<T extends (...args: any[]) => void>(func: T, limit: number): (...args: Parameters<T>) => void {
+export function throttle<T extends (...args: any[]) => void>(
+  func: T,
+  limit: number,
+): (...args: Parameters<T>) => void {
   let inThrottle: boolean = false;
   return (...args: Parameters<T>) => {
     if (!inThrottle) {
@@ -68,7 +75,7 @@ export function formatDuration(ms: number): string {
   const seconds = Math.floor((ms / 1000) % 60);
   const minutes = Math.floor((ms / (1000 * 60)) % 60);
   const hours = Math.floor((ms / (1000 * 60 * 60)) % 24);
-  
+
   const parts = [];
   if (hours > 0) parts.push(`${hours}h`);
   if (minutes > 0) parts.push(`${minutes}m`);
@@ -114,3 +121,5 @@ export const isLightColor = (hex: string): boolean => {
   const yiq = (r * 299 + g * 587 + b * 114) / 1000;
   return yiq >= 128;
 };
+
+export * from './encryption';

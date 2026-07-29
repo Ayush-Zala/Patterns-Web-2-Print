@@ -1,19 +1,78 @@
-import { Controller, Get, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  Req,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '@core/database/prisma/prisma.service';
 import { ApiTags, ApiOperation, ApiHeader } from '@nestjs/swagger';
-import { ApiKeyGuard } from '@modules/auth/guards/api-key.guard';
+import { StorefrontCompositeGuard } from '../guards/storefront-composite.guard';
 import { ApiKeyRateLimitGuard } from '@modules/auth/guards/api-key-rate-limit.guard';
+import { JwtService } from '@nestjs/jwt';
+import { NativeWebsiteService } from '@modules/integration/services/native-website.service';
+import { WordPressService } from '@modules/integration/services/wordpress.service';
+import { StorefrontAuthDto } from '../dto/storefront-auth.dto';
 
 @ApiTags('Storefront')
 @Controller('storefront')
 export class StorefrontController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+    private readonly nativeWebsiteService: NativeWebsiteService,
+    private readonly wordPressService: WordPressService,
+  ) {}
+
+  @Post('auth')
+  @ApiOperation({ summary: 'Authenticate Storefront Integration (e.g. WordPress Plugin)' })
+  async auth(@Body() dto: StorefrontAuthDto) {
+    const integration = await this.prisma.integration.findUnique({
+      where: { apiKey: dto.apiKey },
+    });
+
+    if (!integration) {
+      throw new UnauthorizedException('Invalid API Key');
+    }
+
+    let result;
+    if (integration.type === 'NATIVE_WEBSITE') {
+      result = await this.nativeWebsiteService.verifyCredentials(dto.apiKey, dto.apiSecret);
+    } else if (integration.type === 'WORDPRESS') {
+      result = await this.wordPressService.verifyCredentials(dto.apiKey, dto.apiSecret);
+    } else {
+      throw new BadRequestException(
+        'Authentication via this endpoint is not supported for this integration type',
+      );
+    }
+
+    const payload = {
+      sub: result.id,
+      type: 'integration',
+      integrationType: result.type,
+      workspaceId: result.workspaceId,
+    };
+
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
+
+    return {
+      success: true,
+      data: {
+        accessToken,
+        expiresIn: 3600,
+        workspaceId: result.workspace.id,
+        workspaceName: result.workspace.name,
+        connectionStatus: result.connectionStatus,
+      },
+    };
+  }
 
   @Get('ping')
-  @UseGuards(ApiKeyRateLimitGuard, ApiKeyGuard)
+  @UseGuards(ApiKeyRateLimitGuard, StorefrontCompositeGuard)
   @ApiOperation({ summary: 'Storefront Handshake / Ping' })
-  @ApiHeader({ name: 'x-api-key', required: true })
-  @ApiHeader({ name: 'x-api-secret', required: true })
   ping(@Req() req: any) {
     return {
       success: true,
@@ -29,10 +88,8 @@ export class StorefrontController {
   }
 
   @Get('products')
-  @UseGuards(ApiKeyRateLimitGuard, ApiKeyGuard)
+  @UseGuards(ApiKeyRateLimitGuard, StorefrontCompositeGuard)
   @ApiOperation({ summary: 'Get published products' })
-  @ApiHeader({ name: 'x-api-key', required: true })
-  @ApiHeader({ name: 'x-api-secret', required: true })
   async getProducts(@Req() req: any) {
     const products = await this.prisma.product.findMany({
       where: {

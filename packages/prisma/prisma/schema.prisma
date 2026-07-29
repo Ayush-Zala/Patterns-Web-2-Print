@@ -77,6 +77,8 @@ model Workspace {
   userPreferences   UserPreference[]
   auditLogs         AuditLog[]
   integrations      Integration[]
+  webhooks          Webhook[]
+  webhookDeliveries WebhookDelivery[]
 
   @@index([slug])
   @@index([status])
@@ -461,4 +463,58 @@ model Product {
   version     Int           @default(1)
 
   @@map("products")
+}
+
+// -----------------------------------------------------------------------------
+// WEBHOOK MODULE
+// -----------------------------------------------------------------------------
+
+model Webhook {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId     String            @map("workspace_id") @db.Uuid
+  url             String
+  encryptedSecret String            @map("encrypted_secret")
+  events          String[]
+  isActive        Boolean           @default(true) @map("is_active")
+  
+  // Audit
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+  deletedAt       DateTime?         @map("deleted_at")
+
+  workspace       Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  deliveries      WebhookDelivery[]
+
+  @@unique([id, workspaceId])
+  @@index([workspaceId])
+  @@index([isActive])
+  @@index([deletedAt])
+  @@map("webhooks")
+}
+
+model WebhookDelivery {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  webhookId      String    @map("webhook_id") @db.Uuid
+  workspaceId    String    @map("workspace_id") @db.Uuid
+  event          String
+  attempt        Int       @default(1)
+  responseStatus Int?      @map("response_status")
+  latency        Int?      // in milliseconds
+  nextRetryAt    DateTime? @map("next_retry_at")
+  deliveredAt    DateTime? @map("delivered_at")
+  errorMessage   String?   @map("error_message")
+
+  // Audit
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  webhook        Webhook   @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([id, workspaceId])
+  @@index([webhookId])
+  @@index([workspaceId])
+  @@index([event])
+  @@index([nextRetryAt])
+  @@map("webhook_deliveries")
 }

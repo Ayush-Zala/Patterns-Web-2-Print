@@ -22,10 +22,12 @@ export class AssetJobProcessor extends BaseJobProcessor<AssetProcessingJobData> 
     super(QUEUE_NAMES.ASSETS, connectionOptions);
   }
 
-  protected async processJob(job: Job<AssetProcessingJobData>): Promise<{ success: boolean; processedAt: string }> {
+  protected async processJob(
+    job: Job<AssetProcessingJobData>,
+  ): Promise<{ success: boolean; processedAt: string }> {
     const { assetId, action } = job.data;
     this.logger.log(`Simulating ${action} processing for asset ${assetId}`);
-    
+
     // Simulating background job execution
     await new Promise((resolve) => setTimeout(resolve, 500));
 

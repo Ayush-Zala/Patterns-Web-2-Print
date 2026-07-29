@@ -11,6 +11,7 @@ import {
   HttpCode,
   HttpStatus,
   UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
 import { IntegrationService } from '../services/integration.service';
@@ -18,6 +19,7 @@ import { IntegrationMapper } from '../mappers/integration.mapper';
 import { CreateIntegrationDto } from '../dto/create-integration.dto';
 import { UpdateIntegrationDto } from '../dto/update-integration.dto';
 import { NativeWebsiteService } from '../services/native-website.service';
+import { WordPressService } from '../services/wordpress.service';
 import { IntegrationQueryDto } from '../dto/integration-query.dto';
 import { CurrentWorkspace } from '@modules/workspace-context/decorators/current-workspace.decorator';
 import { WorkspaceGuard } from '@modules/workspace-context/guards/workspace.guard';
@@ -37,6 +39,7 @@ export class IntegrationController {
     private readonly service: IntegrationService,
     private readonly mapper: IntegrationMapper,
     private readonly nativeWebsiteService: NativeWebsiteService,
+    private readonly wordPressService: WordPressService,
   ) {}
 
   @Post()
@@ -77,31 +80,73 @@ export class IntegrationController {
   }
 
   @Post(':id/connect')
-  @ApiOperation({ summary: 'Generate native website credentials' })
-  async connectNative(
+  @ApiOperation({ summary: 'Generate integration credentials' })
+  async connect(
     @CurrentWorkspace('id') workspaceId: string,
     @Param('id') id: string,
     @CurrentUser('sub') userId: string,
   ) {
-    const data = await this.nativeWebsiteService.connect(workspaceId, id, userId);
+    const integration = await this.service.findOne(workspaceId, id);
+    let data;
+    if (integration.type === 'NATIVE_WEBSITE') {
+      data = await this.nativeWebsiteService.connect(workspaceId, id, userId);
+    } else if (integration.type === 'WORDPRESS') {
+      data = await this.wordPressService.connect(workspaceId, id, userId);
+    } else {
+      throw new BadRequestException('Connection not supported for this integration type');
+    }
     return { success: true, message: 'Connected successfully', data };
   }
 
   @Post(':id/rotate-secret')
-  @ApiOperation({ summary: 'Rotate native website secret' })
-  async rotateNativeSecret(
+  @ApiOperation({ summary: 'Rotate integration secret' })
+  async rotateSecret(
     @CurrentWorkspace('id') workspaceId: string,
     @Param('id') id: string,
     @CurrentUser('sub') userId: string,
   ) {
-    const data = await this.nativeWebsiteService.rotateSecret(workspaceId, id, userId);
+    const integration = await this.service.findOne(workspaceId, id);
+    let data;
+    if (integration.type === 'NATIVE_WEBSITE') {
+      data = await this.nativeWebsiteService.rotateSecret(workspaceId, id, userId);
+    } else if (integration.type === 'WORDPRESS') {
+      data = await this.wordPressService.rotateSecret(workspaceId, id, userId);
+    } else {
+      throw new BadRequestException('Secret rotation not supported for this integration type');
+    }
     return { success: true, message: 'Rotated secret successfully', data };
   }
 
+  @Post(':id/disconnect')
+  @ApiOperation({ summary: 'Disconnect integration without deleting credentials' })
+  async disconnect(
+    @CurrentWorkspace('id') workspaceId: string,
+    @Param('id') id: string,
+    @CurrentUser('sub') userId: string,
+  ): Promise<any> {
+    const integration = await this.service.findOne(workspaceId, id);
+    if (integration.type !== 'WORDPRESS' && integration.type !== 'NATIVE_WEBSITE') {
+      throw new BadRequestException('Disconnect not supported for this integration type');
+    }
+    // Update connection status to DISCONNECTED
+    const data = await this.service.update(workspaceId, id, userId, {
+      connectionStatus: 'DISCONNECTED',
+    } as any);
+    return { success: true, message: 'Disconnected successfully', data };
+  }
+
   @Get(':id/status')
-  @ApiOperation({ summary: 'Get native website connection status' })
-  async getNativeStatus(@CurrentWorkspace('id') workspaceId: string, @Param('id') id: string) {
-    const data = await this.nativeWebsiteService.getStatus(workspaceId, id);
+  @ApiOperation({ summary: 'Get integration connection status' })
+  async getStatus(@CurrentWorkspace('id') workspaceId: string, @Param('id') id: string) {
+    const integration = await this.service.findOne(workspaceId, id);
+    let data;
+    if (integration.type === 'NATIVE_WEBSITE') {
+      data = await this.nativeWebsiteService.getStatus(workspaceId, id);
+    } else if (integration.type === 'WORDPRESS') {
+      data = await this.wordPressService.getStatus(workspaceId, id);
+    } else {
+      throw new BadRequestException('Status not supported for this integration type');
+    }
     return { success: true, message: 'Status fetched', data };
   }
 

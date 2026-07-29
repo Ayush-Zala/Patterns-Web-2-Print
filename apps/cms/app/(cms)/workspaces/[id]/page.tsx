@@ -19,6 +19,7 @@ import Link from 'next/link';
 import { useWorkspace } from '@/providers/workspace-provider';
 import { toast } from 'sonner';
 import { IntegrationsTab } from './components/IntegrationsTab';
+import { WebhooksTab } from './components/WebhooksTab';
 
 export default function WorkspaceDetailsPage() {
   const { id } = useParams() as { id: string };
@@ -26,7 +27,7 @@ export default function WorkspaceDetailsPage() {
   const queryClient = useQueryClient();
   const { currentWorkspace } = useWorkspace();
   const [activeTab, setActiveTab] = useState<
-    'general' | 'branding' | 'settings' | 'integrations' | 'danger'
+    'general' | 'branding' | 'settings' | 'integrations' | 'webhooks' | 'danger'
   >('general');
 
   const { data, isLoading, isError } = useQuery({
@@ -170,6 +171,7 @@ export default function WorkspaceDetailsPage() {
     { id: 'branding', label: 'Branding', icon: <ImageIcon className="h-4 w-4" /> },
     { id: 'settings', label: 'Settings', icon: <Settings className="h-4 w-4" /> },
     { id: 'integrations', label: 'Integrations', icon: <LinkIcon className="h-4 w-4" /> },
+    { id: 'webhooks', label: 'Webhooks', icon: <FileText className="h-4 w-4" /> },
     { id: 'danger', label: 'Danger Zone', icon: <ShieldAlert className="h-4 w-4" /> },
   ];
 
@@ -414,6 +416,8 @@ export default function WorkspaceDetailsPage() {
         )}
 
         {activeTab === 'integrations' && <IntegrationsTab />}
+
+        {activeTab === 'webhooks' && <WebhooksTab />}
 
         {activeTab === 'danger' && (
           <div className="max-w-xl space-y-6">

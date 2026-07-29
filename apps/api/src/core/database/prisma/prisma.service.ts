@@ -9,13 +9,17 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   constructor(private configService: ConfigService) {
     super({
       datasourceUrl: configService.get<string>('DATABASE_URL')!,
-      log: PrismaService.parseLogLevels(configService.get<string>('DATABASE_LOG_LEVEL', 'error,warn')),
+      log: PrismaService.parseLogLevels(
+        configService.get<string>('DATABASE_LOG_LEVEL', 'error,warn'),
+      ),
     });
   }
 
   private static parseLogLevels(logLevelStr: string): Prisma.LogLevel[] {
     const levels = logLevelStr.split(',').map((l) => l.trim().toLowerCase());
-    return levels.filter((l) => ['info', 'query', 'warn', 'error'].includes(l)) as Prisma.LogLevel[];
+    return levels.filter((l) =>
+      ['info', 'query', 'warn', 'error'].includes(l),
+    ) as Prisma.LogLevel[];
   }
 
   async onModuleInit() {

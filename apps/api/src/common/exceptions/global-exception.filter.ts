@@ -20,14 +20,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
 
     const status =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+      exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
 
     const message =
-      exception instanceof HttpException
-        ? exception.message
-        : 'Internal server error';
+      exception instanceof HttpException ? exception.message : 'Internal server error';
 
     const errorResponse: ErrorResponse = {
       success: false,
@@ -35,7 +31,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
-      requestId: request.headers[REQUEST_ID_HEADER] as string || 'unknown',
+      requestId: (request.headers[REQUEST_ID_HEADER] as string) || 'unknown',
     };
 
     // Log the error
@@ -45,7 +41,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         exception instanceof Error ? exception.stack : String(exception),
       );
     } else {
-      this.logger.warn(`[${errorResponse.requestId}] ${request.method} ${request.url} - ${message}`);
+      this.logger.warn(
+        `[${errorResponse.requestId}] ${request.method} ${request.url} - ${message}`,
+      );
     }
 
     response.status(status).json(errorResponse);

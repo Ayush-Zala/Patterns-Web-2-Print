@@ -1,11 +1,13 @@
 # Developer Setup Guide
 
 ## Local Prerequisites
+
 - Node.js >= 20.x
 - pnpm >= 9.x
 - Docker & Docker Compose
 
 ## Quick Start
+
 ```bash
 # 1. Install workspace dependencies
 pnpm install

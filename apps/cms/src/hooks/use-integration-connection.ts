@@ -3,7 +3,7 @@ import { integrationKeys } from './use-integrations';
 import { httpClient } from '@/core/http/http-client';
 import { toast } from 'sonner';
 
-export const useConnectNative = (workspaceId: string) => {
+export const useConnectIntegration = (workspaceId: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -20,7 +20,7 @@ export const useConnectNative = (workspaceId: string) => {
       queryClient.invalidateQueries({
         queryKey: integrationKeys.detail(id),
       });
-      toast.success('Generated Native Website credentials');
+      toast.success('Generated credentials');
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to generate credentials');
@@ -28,7 +28,7 @@ export const useConnectNative = (workspaceId: string) => {
   });
 };
 
-export const useRotateNativeSecret = (workspaceId: string) => {
+export const useRotateIntegrationSecret = (workspaceId: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -53,9 +53,33 @@ export const useRotateNativeSecret = (workspaceId: string) => {
   });
 };
 
-export const useNativeStatus = (workspaceId: string, id: string) => {
+export const useDisconnectIntegration = (workspaceId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await httpClient.post<{
+        integration: any;
+      }>(`/integrations/${id}/disconnect`, undefined, {
+        headers: { 'x-workspace-id': workspaceId },
+      });
+      return data;
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({
+        queryKey: integrationKeys.detail(id),
+      });
+      toast.success('Disconnected successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to disconnect');
+    },
+  });
+};
+
+export const useIntegrationStatus = (workspaceId: string, id: string) => {
   return useQuery({
-    queryKey: [...integrationKeys.detail(id), 'native-status'],
+    queryKey: [...integrationKeys.detail(id), 'integration-status'],
     queryFn: async () => {
       const { data } = await httpClient.get<{
         connectionStatus: string;

@@ -1,5 +1,6 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { BullModule } from '@nestjs/bullmq';
 import { validate } from '@config/env.validation';
 import configuration from '@config/configuration';
 import { LoggerModule } from '@core/logger/logger.module';
@@ -24,6 +25,8 @@ import { ActivityModule } from './modules/activity/activity.module';
 import { IntegrationModule } from './modules/integration/integration.module';
 import { StorefrontModule } from './modules/storefront/storefront.module';
 import { ProductModule } from './modules/product/product.module';
+import { WebhooksModule } from './modules/webhooks/webhooks.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
@@ -31,6 +34,20 @@ import { ProductModule } from './modules/product/product.module';
       isGlobal: true,
       validate,
       load: [configuration],
+    }),
+    EventEmitterModule.forRoot({
+      wildcard: true,
+    }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        connection: {
+          host: configService.get<string>('REDIS_HOST', 'localhost'),
+          port: configService.get<number>('REDIS_PORT', 6379),
+          password: configService.get<string>('REDIS_PASSWORD'),
+        },
+      }),
+      inject: [ConfigService],
     }),
     LoggerModule,
     SystemModule,
@@ -53,6 +70,7 @@ import { ProductModule } from './modules/product/product.module';
     IntegrationModule,
     StorefrontModule,
     ProductModule,
+    WebhooksModule,
   ],
 })
 export class AppModule implements NestModule {

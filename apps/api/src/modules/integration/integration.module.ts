@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { IntegrationController } from './controllers/integration.controller';
 import { IntegrationService } from './services/integration.service';
 import { NativeWebsiteService } from './services/native-website.service';
+import { WordPressService } from './services/wordpress.service';
 import { IntegrationRepository } from './repositories/integration.repository';
 import { IntegrationMapper } from './mappers/integration.mapper';
 import { AuditModule } from '@modules/audit/audit.module';
@@ -9,7 +10,13 @@ import { AuditModule } from '@modules/audit/audit.module';
 @Module({
   imports: [AuditModule],
   controllers: [IntegrationController],
-  providers: [IntegrationService, NativeWebsiteService, IntegrationRepository, IntegrationMapper],
-  exports: [IntegrationService, NativeWebsiteService],
+  providers: [
+    IntegrationService,
+    NativeWebsiteService,
+    WordPressService,
+    IntegrationRepository,
+    IntegrationMapper,
+  ],
+  exports: [IntegrationService, NativeWebsiteService, WordPressService],
 })
 export class IntegrationModule {}

@@ -27,6 +27,6 @@ import { ApiKeyRateLimitGuard } from './guards/api-key-rate-limit.guard';
   ],
   controllers: [AuthController],
   providers: [AuthService, AuthMapper, JwtStrategy, ApiKeyGuard, ApiKeyRateLimitGuard],
-  exports: [AuthService, ApiKeyGuard, ApiKeyRateLimitGuard],
+  exports: [AuthService, ApiKeyGuard, ApiKeyRateLimitGuard, JwtModule],
 })
 export class AuthModule {}

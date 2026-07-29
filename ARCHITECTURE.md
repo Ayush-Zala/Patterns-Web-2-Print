@@ -30,5 +30,6 @@ packages/
 ```
 
 ## Dependency Direction
+
 `Apps → Client → Packages (validation → utils → types → constants)`
 Reverse imports across levels are strictly prohibited.

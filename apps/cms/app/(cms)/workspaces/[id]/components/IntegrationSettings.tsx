@@ -1,22 +1,24 @@
 import React, { useState } from 'react';
 import {
-  useConnectNative,
-  useRotateNativeSecret,
-  useNativeStatus,
-} from '@/hooks/use-native-connection';
-import { Loader2, Key, RefreshCw, Copy, CheckCircle2 } from 'lucide-react';
+  useConnectIntegration,
+  useRotateIntegrationSecret,
+  useDisconnectIntegration,
+  useIntegrationStatus,
+} from '@/hooks/use-integration-connection';
+import { Loader2, Key, RefreshCw, Copy, PlugZap } from 'lucide-react';
 import { toast } from 'sonner';
 
-export function NativeIntegrationSettings({
+export function IntegrationSettings({
   workspaceId,
   integrationId,
 }: {
   workspaceId: string;
   integrationId: string;
 }) {
-  const { data: statusData, isLoading } = useNativeStatus(workspaceId, integrationId);
-  const connectMutation = useConnectNative(workspaceId);
-  const rotateMutation = useRotateNativeSecret(workspaceId);
+  const { data: statusData, isLoading } = useIntegrationStatus(workspaceId, integrationId);
+  const connectMutation = useConnectIntegration(workspaceId);
+  const rotateMutation = useRotateIntegrationSecret(workspaceId);
+  const disconnectMutation = useDisconnectIntegration(workspaceId);
 
   const [exposedSecret, setExposedSecret] = useState<string | null>(null);
 
@@ -34,6 +36,21 @@ export function NativeIntegrationSettings({
       try {
         const result = await rotateMutation.mutateAsync(integrationId);
         setExposedSecret(result.apiSecret);
+      } catch (e) {
+        // toast already handled
+      }
+    }
+  };
+
+  const handleDisconnect = async () => {
+    if (
+      confirm(
+        'Are you sure you want to disconnect? External applications using these credentials will stop working.',
+      )
+    ) {
+      try {
+        await disconnectMutation.mutateAsync(integrationId);
+        setExposedSecret(null);
       } catch (e) {
         // toast already handled
       }
@@ -77,7 +94,7 @@ export function NativeIntegrationSettings({
       {connectionStatus === 'DISCONNECTED' && (
         <div className="py-4 text-center">
           <p className="text-muted mb-4 text-sm">
-            Generate API credentials to connect your native website.
+            Generate API credentials to connect your integration.
           </p>
           <button
             type="button"
@@ -141,19 +158,34 @@ export function NativeIntegrationSettings({
                 <div>Last Verified: {new Date(lastVerifiedAt).toLocaleString()}</div>
               )}
             </div>
-            <button
-              type="button"
-              onClick={handleRotate}
-              disabled={rotateMutation.isPending}
-              className="border-border bg-background text-foreground hover:bg-muted inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium disabled:opacity-50"
-            >
-              {rotateMutation.isPending ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <RefreshCw className="h-3 w-3" />
-              )}
-              Rotate Secret
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleRotate}
+                disabled={rotateMutation.isPending}
+                className="border-border bg-background text-foreground hover:bg-muted inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium disabled:opacity-50"
+              >
+                {rotateMutation.isPending ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3 w-3" />
+                )}
+                Rotate Secret
+              </button>
+              <button
+                type="button"
+                onClick={handleDisconnect}
+                disabled={disconnectMutation.isPending}
+                className="border-border bg-background inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-500/10 disabled:opacity-50"
+              >
+                {disconnectMutation.isPending ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <PlugZap className="h-3 w-3" />
+                )}
+                Disconnect
+              </button>
+            </div>
           </div>
         </div>
       )}

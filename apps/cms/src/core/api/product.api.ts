@@ -34,9 +34,6 @@ export const productApi = {
     const formData = new FormData();
     formData.append('file', file);
 
-    return httpClient.post<{ success: boolean; data: { url: string } }>(
-      '/uploads/product',
-      formData,
-    );
+    return httpClient.post<{ url: string }>('/uploads/product', formData);
   },
 };

@@ -7,7 +7,7 @@ import {
 } from '@/hooks/use-integrations';
 import { Plus, Settings2, Trash2, Edit2, Link as LinkIcon, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { NativeIntegrationSettings } from './NativeIntegrationSettings';
+import { IntegrationSettings } from './IntegrationSettings';
 
 type IntegrationType = 'NATIVE_WEBSITE' | 'WORDPRESS' | 'SHOPIFY';
 type IntegrationStatus = 'ACTIVE' | 'SUSPENDED' | 'DISCONNECTED';
@@ -187,8 +187,8 @@ export function IntegrationsTab() {
                     </div>
                   </div>
 
-                  {integration.type === 'NATIVE_WEBSITE' ? (
-                    <NativeIntegrationSettings
+                  {integration.type === 'NATIVE_WEBSITE' || integration.type === 'WORDPRESS' ? (
+                    <IntegrationSettings
                       workspaceId={integration.workspaceId}
                       integrationId={integration.id}
                     />

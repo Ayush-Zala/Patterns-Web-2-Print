@@ -32,8 +32,8 @@ import { REQUEST_ID_HEADER } from '@common/constants/header.constants';
             autoLogging: {
               ignore: (req) => {
                 return req.url === '/api/v1/system/health';
-              }
-            }
+              },
+            },
           },
         };
       },

@@ -3,7 +3,9 @@
 This directory contains the database seeds for the application.
 
 ## Organization
+
 In the future, seed data should be organized by module, for example:
+
 - `seed/workspace.seed.ts`
 - `seed/product.seed.ts`
 

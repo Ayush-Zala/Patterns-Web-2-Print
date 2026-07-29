@@ -16,7 +16,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     const db = this.configService.get<number>('REDIS_DB', 0);
 
     this.logger.log(`Connecting to Redis at ${host}:${port}...`);
-    
+
     this.client = new Redis({
       host,
       port,

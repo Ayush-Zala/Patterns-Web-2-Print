@@ -15,4 +15,7 @@ export default () => ({
     cookieSameSite: process.env.COOKIE_SAME_SITE,
     cookiePath: process.env.COOKIE_PATH,
   },
+  webhooks: {
+    secretEncryptionKey: process.env.WEBHOOK_SECRET_ENCRYPTION_KEY,
+  },
 });

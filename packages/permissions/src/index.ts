@@ -1,5 +1,6 @@
 export type PermissionAction = 'create' | 'read' | 'update' | 'delete' | 'manage';
-export type PermissionResource = 'workspace' | 'user' | 'product' | 'order' | 'template' | 'asset' | 'all';
+export type PermissionResource =
+  'workspace' | 'user' | 'product' | 'order' | 'template' | 'asset' | 'all';
 
 export interface Scope {
   resource: PermissionResource;

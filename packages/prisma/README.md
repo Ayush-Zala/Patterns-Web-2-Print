@@ -16,6 +16,7 @@ This package provides the single source of truth for the database schema and the
 - **Prisma Fields**: `camelCase`
 
 Every business entity must implement:
+
 - `id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid`
 - `createdAt DateTime @default(now()) @map("created_at")`
 - `updatedAt DateTime @updatedAt @map("updated_at")`

@@ -32,6 +32,9 @@ export const envSchema = z.object({
   COOKIE_SECURE: z.coerce.boolean().default(false),
   COOKIE_SAME_SITE: z.enum(['lax', 'strict', 'none']).default('lax'),
   COOKIE_PATH: z.string().default('/'),
+
+  // Webhooks
+  WEBHOOK_SECRET_ENCRYPTION_KEY: z.string().length(64),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

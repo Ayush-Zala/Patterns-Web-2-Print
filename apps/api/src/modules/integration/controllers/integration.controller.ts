@@ -18,8 +18,6 @@ import { IntegrationService } from '../services/integration.service';
 import { IntegrationMapper } from '../mappers/integration.mapper';
 import { CreateIntegrationDto } from '../dto/create-integration.dto';
 import { UpdateIntegrationDto } from '../dto/update-integration.dto';
-import { NativeWebsiteService } from '../services/native-website.service';
-import { WordPressService } from '../services/wordpress.service';
 import { IntegrationQueryDto } from '../dto/integration-query.dto';
 import { CurrentWorkspace } from '@modules/workspace-context/decorators/current-workspace.decorator';
 import { WorkspaceGuard } from '@modules/workspace-context/guards/workspace.guard';
@@ -27,6 +25,8 @@ import { CurrentUser } from '@modules/auth/decorators/current-user.decorator';
 import { WorkspaceContextInterceptor } from '@modules/workspace-context/interceptors/workspace-context.interceptor';
 
 import { JwtAuthGuard } from '@modules/auth/guards/jwt-auth.guard';
+
+import { ShopifySyncService } from '../services/shopify-sync.service';
 
 @ApiTags('Integrations')
 @ApiBearerAuth()
@@ -38,9 +38,18 @@ export class IntegrationController {
   constructor(
     private readonly service: IntegrationService,
     private readonly mapper: IntegrationMapper,
-    private readonly nativeWebsiteService: NativeWebsiteService,
-    private readonly wordPressService: WordPressService,
+    private readonly syncService: ShopifySyncService,
   ) {}
+
+  @Post(':id/shopify/sync')
+  @ApiOperation({ summary: 'Trigger a background sync from Shopify' })
+  async syncShopify(@CurrentWorkspace('id') workspaceId: string, @Param('id') id: string) {
+    // Fire and forget background sync
+    this.syncService
+      .syncProductsToPatterns(workspaceId, id)
+      .catch((err) => console.error('Sync failed', err));
+    return { success: true, message: 'Sync started in background' };
+  }
 
   @Post()
   @ApiOperation({ summary: 'Create a new integration' })
@@ -79,6 +88,22 @@ export class IntegrationController {
     };
   }
 
+  @Post('shopify/connect')
+  @ApiOperation({ summary: 'Handle Shopify OAuth redirect' })
+  async connectShopify(
+    @CurrentWorkspace('id') workspaceId: string,
+    @Body() dto: { shop: string; redirectUri: string },
+    @CurrentUser('sub') userId: string,
+  ) {
+    const data = await this.service.connectShopifyOAuth(
+      workspaceId,
+      userId,
+      dto.shop,
+      dto.redirectUri,
+    );
+    return { success: true, message: 'OAuth handshake successful', data };
+  }
+
   @Post(':id/connect')
   @ApiOperation({ summary: 'Generate integration credentials' })
   async connect(
@@ -86,15 +111,7 @@ export class IntegrationController {
     @Param('id') id: string,
     @CurrentUser('sub') userId: string,
   ) {
-    const integration = await this.service.findOne(workspaceId, id);
-    let data;
-    if (integration.type === 'NATIVE_WEBSITE') {
-      data = await this.nativeWebsiteService.connect(workspaceId, id, userId);
-    } else if (integration.type === 'WORDPRESS') {
-      data = await this.wordPressService.connect(workspaceId, id, userId);
-    } else {
-      throw new BadRequestException('Connection not supported for this integration type');
-    }
+    const data = await this.service.connectIntegration(workspaceId, id, userId);
     return { success: true, message: 'Connected successfully', data };
   }
 
@@ -105,15 +122,7 @@ export class IntegrationController {
     @Param('id') id: string,
     @CurrentUser('sub') userId: string,
   ) {
-    const integration = await this.service.findOne(workspaceId, id);
-    let data;
-    if (integration.type === 'NATIVE_WEBSITE') {
-      data = await this.nativeWebsiteService.rotateSecret(workspaceId, id, userId);
-    } else if (integration.type === 'WORDPRESS') {
-      data = await this.wordPressService.rotateSecret(workspaceId, id, userId);
-    } else {
-      throw new BadRequestException('Secret rotation not supported for this integration type');
-    }
+    const data = await this.service.rotateIntegrationSecret(workspaceId, id, userId);
     return { success: true, message: 'Rotated secret successfully', data };
   }
 
@@ -124,29 +133,14 @@ export class IntegrationController {
     @Param('id') id: string,
     @CurrentUser('sub') userId: string,
   ): Promise<any> {
-    const integration = await this.service.findOne(workspaceId, id);
-    if (integration.type !== 'WORDPRESS' && integration.type !== 'NATIVE_WEBSITE') {
-      throw new BadRequestException('Disconnect not supported for this integration type');
-    }
-    // Update connection status to DISCONNECTED
-    const data = await this.service.update(workspaceId, id, userId, {
-      connectionStatus: 'DISCONNECTED',
-    } as any);
+    const data = await this.service.disconnectIntegration(workspaceId, id, userId);
     return { success: true, message: 'Disconnected successfully', data };
   }
 
   @Get(':id/status')
   @ApiOperation({ summary: 'Get integration connection status' })
   async getStatus(@CurrentWorkspace('id') workspaceId: string, @Param('id') id: string) {
-    const integration = await this.service.findOne(workspaceId, id);
-    let data;
-    if (integration.type === 'NATIVE_WEBSITE') {
-      data = await this.nativeWebsiteService.getStatus(workspaceId, id);
-    } else if (integration.type === 'WORDPRESS') {
-      data = await this.wordPressService.getStatus(workspaceId, id);
-    } else {
-      throw new BadRequestException('Status not supported for this integration type');
-    }
+    const data = await this.service.getIntegrationStatus(workspaceId, id);
     return { success: true, message: 'Status fetched', data };
   }
 

@@ -187,7 +187,9 @@ export function IntegrationsTab() {
                     </div>
                   </div>
 
-                  {integration.type === 'NATIVE_WEBSITE' || integration.type === 'WORDPRESS' ? (
+                  {integration.type === 'NATIVE_WEBSITE' ||
+                  integration.type === 'WORDPRESS' ||
+                  integration.type === 'SHOPIFY' ? (
                     <IntegrationSettings
                       workspaceId={integration.workspaceId}
                       integrationId={integration.id}

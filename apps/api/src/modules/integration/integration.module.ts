@@ -6,6 +6,8 @@ import { WordPressService } from './services/wordpress.service';
 import { IntegrationRepository } from './repositories/integration.repository';
 import { IntegrationMapper } from './mappers/integration.mapper';
 import { AuditModule } from '@modules/audit/audit.module';
+import { ShopifyService } from './services/shopify.service';
+import { ShopifySyncService } from './services/shopify-sync.service';
 
 @Module({
   imports: [AuditModule],
@@ -14,9 +16,17 @@ import { AuditModule } from '@modules/audit/audit.module';
     IntegrationService,
     NativeWebsiteService,
     WordPressService,
+    ShopifyService,
+    ShopifySyncService,
     IntegrationRepository,
     IntegrationMapper,
   ],
-  exports: [IntegrationService, NativeWebsiteService, WordPressService],
+  exports: [
+    IntegrationService,
+    NativeWebsiteService,
+    WordPressService,
+    ShopifyService,
+    ShopifySyncService,
+  ],
 })
 export class IntegrationModule {}

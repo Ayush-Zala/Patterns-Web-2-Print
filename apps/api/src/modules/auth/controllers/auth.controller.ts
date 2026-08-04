@@ -23,12 +23,18 @@ import { Request, Response } from 'express';
 import { JwtPayload } from '@patterns/types';
 import { AUTH_CONSTANTS } from '../constants/auth.constants';
 
+import { JwtService } from '@nestjs/jwt';
+import { ShopifyService } from '@modules/integration/services/shopify.service';
+import { StorefrontAuthDto } from '@modules/storefront/dto/storefront-auth.dto';
+
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly authMapper: AuthMapper,
+    private readonly jwtService: JwtService,
+    private readonly shopifyService: ShopifyService,
   ) {}
 
   @Public()
@@ -149,5 +155,33 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current user' })
   async getMe(@CurrentUser() user: JwtPayload) {
     return { success: true, data: { user: { id: user.sub, email: user.email } } };
+  }
+
+  @Public()
+  @Post('shopify')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Authenticate Shopify Storefront' })
+  async shopifyAuth(@Body() dto: StorefrontAuthDto) {
+    const result = await this.shopifyService.verifyCredentials(dto.apiKey, dto.apiSecret);
+
+    const payload = {
+      sub: result.id,
+      type: 'integration',
+      integrationType: result.type,
+      workspaceId: result.workspaceId,
+    };
+
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
+
+    return {
+      success: true,
+      data: {
+        accessToken,
+        expiresIn: 3600,
+        workspaceId: result.workspace.id,
+        workspaceName: result.workspace.name,
+        connectionStatus: result.connectionStatus,
+      },
+    };
   }
 }

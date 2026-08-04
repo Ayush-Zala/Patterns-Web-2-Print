@@ -79,6 +79,7 @@ model Workspace {
   integrations      Integration[]
   webhooks          Webhook[]
   webhookDeliveries WebhookDelivery[]
+  shopifyInstallations ShopifyInstallation[]
 
   @@index([slug])
   @@index([status])
@@ -133,7 +134,8 @@ model Integration {
   deletedAt     DateTime?         @map("deleted_at")
   version       Int               @default(1)
 
-  workspace     Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace             Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  shopifyInstallations  ShopifyInstallation[]
 
   @@unique([workspaceId, type])
   @@index([workspaceId])
@@ -323,25 +325,36 @@ model LoginAttempt {
   @@index([ipAddress])
   @@map("login_attempts")
 }
+
 // -----------------------------------------------------------------------------
 // PRODUCT MODULE
-// Future entities: Product, Variant, Category
 // -----------------------------------------------------------------------------
 
-// -----------------------------------------------------------------------------
-// ORDER MODULE
-// Future entities: Order, OrderItem, Fulfillment
-// -----------------------------------------------------------------------------
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
 
-// -----------------------------------------------------------------------------
-// TEMPLATE & ASSET MODULE
-// Future entities: Template, Asset, Folder
-// -----------------------------------------------------------------------------
+model Product {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId String        @map("workspace_id") @db.Uuid
+  sourceId    String?       @map("source_id")
+  sourceType  String?       @map("source_type")
+  title       String
+  description String?
+  price       Int           // Price in cents
+  imageUrl    String?       @map("image_url")
+  status      ProductStatus @default(DRAFT)
+  
+  // Audit
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  deletedAt   DateTime?     @map("deleted_at")
+  version     Int           @default(1)
 
-// -----------------------------------------------------------------------------
-// EDITOR MODULE
-// Future entities: SavedDesign, DesignElement
-// -----------------------------------------------------------------------------
+  @@map("products")
+}
 
 // -----------------------------------------------------------------------------
 // USER PREFERENCES MODULE
@@ -436,35 +449,6 @@ model AuditLog {
   @@map("audit_logs")
 }
 
-
-// -----------------------------------------------------------------------------
-// PRODUCT MODULE
-// -----------------------------------------------------------------------------
-
-enum ProductStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
-}
-
-model Product {
-  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  workspaceId String        @map("workspace_id") @db.Uuid
-  title       String
-  description String?
-  price       Int           // Price in cents
-  imageUrl    String?       @map("image_url")
-  status      ProductStatus @default(DRAFT)
-  
-  // Audit
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
-  deletedAt   DateTime?     @map("deleted_at")
-  version     Int           @default(1)
-
-  @@map("products")
-}
-
 // -----------------------------------------------------------------------------
 // WEBHOOK MODULE
 // -----------------------------------------------------------------------------
@@ -517,4 +501,57 @@ model WebhookDelivery {
   @@index([event])
   @@index([nextRetryAt])
   @@map("webhook_deliveries")
+}
+
+// -----------------------------------------------------------------------------
+// SHOPIFY MODULE
+// -----------------------------------------------------------------------------
+
+enum ShopifyInstallationStatus {
+  ACTIVE
+  DISCONNECTED
+  UNINSTALLED
+}
+
+model ShopifyInstallation {
+  id                      String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shopDomain              String                    @unique
+  shopId                  String?
+  workspaceId             String                    @map("workspace_id") @db.Uuid
+  integrationId           String                    @map("integration_id") @db.Uuid
+  shopifyAccessToken      String?                   @map("shopify_access_token")
+  patternsConnectionToken String                    @map("patterns_connection_token")
+  scopes                  String?
+  status                  ShopifyInstallationStatus @default(ACTIVE)
+
+  // Audit
+  version                 Int                       @default(1)
+  installedAt             DateTime                  @default(now()) @map("installed_at")
+  updatedAt               DateTime                  @updatedAt @map("updated_at")
+  uninstalledAt           DateTime?                 @map("uninstalled_at")
+  // Relations
+  workspace               Workspace                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  integration             Integration               @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@map("shopify_installations")
+}
+
+model ShopifySession {
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
 }

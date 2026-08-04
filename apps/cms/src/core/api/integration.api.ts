@@ -59,4 +59,8 @@ export const integrationApi = {
     httpClient.delete(`/integrations/${id}`, {
       headers: { 'x-workspace-id': workspaceId },
     }),
+  connectShopify: (workspaceId: string, data: { shop: string; redirectUri: string }) =>
+    httpClient.post<{ redirectUrl: string }>('/integrations/shopify/connect', data, {
+      headers: { 'x-workspace-id': workspaceId },
+    }),
 };

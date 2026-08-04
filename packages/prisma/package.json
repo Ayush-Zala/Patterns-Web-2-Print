@@ -19,12 +19,12 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
-    "@prisma/client": "^5.10.2"
+    "@prisma/client": "^7.9.1"
   },
   "devDependencies": {
     "@patterns/typescript-config": "workspace:*",
     "argon2": "^0.45.1",
-    "prisma": "^5.10.2",
+    "prisma": "^7.9.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.1.3"
   },

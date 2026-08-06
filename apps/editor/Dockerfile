@@ -2,14 +2,14 @@
 # Patterns Editor - Production Dockerfile
 # -----------------------------------------------------------------------------
 
-FROM node:20-alpine AS builder
+FROM node:25-alpine AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 RUN npm install -g pnpm turbo
 COPY . .
 RUN turbo prune @patterns/editor --docker
 
-FROM node:20-alpine AS installer
+FROM node:25-alpine AS installer
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 RUN npm install -g pnpm
@@ -21,7 +21,7 @@ RUN pnpm install --frozen-lockfile
 COPY --from=builder /app/out/full/ .
 RUN pnpm run build --filter @patterns/editor
 
-FROM node:20-alpine AS runner
+FROM node:25-alpine AS runner
 LABEL org.opencontainers.image.title="Patterns Editor" \
       org.opencontainers.image.description="Patterns Web-to-Print Canvas Editor Application"
 

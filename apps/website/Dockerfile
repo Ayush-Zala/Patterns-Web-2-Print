@@ -2,14 +2,14 @@
 # Patterns Website - Production Dockerfile
 # -----------------------------------------------------------------------------
 
-FROM node:20-alpine AS builder
+FROM node:25-alpine AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 RUN npm install -g pnpm turbo
 COPY . .
 RUN turbo prune @patterns/website --docker
 
-FROM node:20-alpine AS installer
+FROM node:25-alpine AS installer
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 RUN npm install -g pnpm
@@ -21,7 +21,7 @@ RUN pnpm install --frozen-lockfile
 COPY --from=builder /app/out/full/ .
 RUN pnpm run build --filter @patterns/website
 
-FROM node:20-alpine AS runner
+FROM node:25-alpine AS runner
 LABEL org.opencontainers.image.title="Patterns Website" \
       org.opencontainers.image.description="Patterns Public Web Storefront"
 
